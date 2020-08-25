@@ -6,6 +6,8 @@ import org.apache.kafka.common.serialization.LongSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.text.SimpleDateFormat;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -15,25 +17,12 @@ import java.util.concurrent.TimeUnit;
 
 public class KafkaProducerExample {
 
-    public enum MbStatus {
-        NY("NY"),
-        KLAR("KLAR"),
-        FEILET("FEILET"),
-        PARKERT ("PARKERT");
-
-        public final String label;
-
-        private MbStatus(String label) {
-            this.label = label;
-        }
-    }
-
     public enum MbTopics {
-        ARBEIDSOPPGAVE_TIL_SAKSBEHANDLER("ARBEIDSOPPGAVE_TIL_SAKSBEHANDLER"),
-        KONTROLL ("KONTROLL"),
+        ARBEIDSOPPGAVE_TIL_SAKSBEHANDLER("SKATTEMELDING_ARBEIDSOPPGAVE_TIL_SAKSBEHANDLER"),
+        KONTROLL ("SKATTEMELDING_KONTROLL"),
         SKATTEMELDING_UTKAST ("SKATTEMELDING_UTKAST"),
         SKATTEMELDING_PUBLISERING ("SKATTEMELDING_PUBLISERING"),
-        LEVERINGSFRITAK("LEVERINGSFRITAK"),
+        LEVERINGSFRITAK("SKATTEMELDING_LEVERINGSFRITAK"),
         my_example_topic("my-example-topic");
 
         public final String label;
@@ -83,11 +72,17 @@ public class KafkaProducerExample {
             for (int rep=0; rep < 100; rep++) {
                 for (int i = 0; i < jobbListe.size(); i++) {
                     String timeMs = setTime2String();
+                    final ZonedDateTime now = ZonedDateTime.now();
 
                     final String key = jobbListe.get(i) + ":" + inntektsaar + ":" + jobbId;
-                    final String value = "{value: { status:" + MbStatus.NY.label + " jobbid:" + jobbId + ", beskrivelse:test" +
+                    final KafkaMelding melding = new KafkaMelding(KafkaMelding.MbStatus.NY.label, jobbId, "beskrivelse:test"
+                        , i, key, "bla bla debug..");
+
+                    final String value = melding.serializeObject2Json();
+
+                    /*final String value = "{value: { status:" + KafkaMelding.MbStatus.NY.label + " jobbid:" + jobbId + ", beskrivelse:test" +
                         ", tid:" + timeMs + ", tidms:" + System.currentTimeMillis() + ", index: " + i + ", key:" + key
-                        + "}}";
+                        + "}}";*/
 
                     final ProducerRecord<String, String> record =
                         new ProducerRecord<>(TOPIC, key, value);
